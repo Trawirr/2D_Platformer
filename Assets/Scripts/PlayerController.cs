@@ -24,6 +24,12 @@ public class PLayerController : MonoBehaviour
     private int keysNumber = 3;*/
     private Vector2 startPosition;
 
+    public AudioClip coinSound;
+    public AudioClip killSound;
+    public AudioClip deathSound;
+    public AudioClip loseSound;
+    private AudioSource source;
+
     void OnTriggerExit2D(Collider2D other)
     {
         if (other.CompareTag("MovingPlatform"))
@@ -36,6 +42,7 @@ public class PLayerController : MonoBehaviour
     {
         if (other.CompareTag("Bonus"))
         {
+            source.PlayOneShot(coinSound, AudioListener.volume);
             GameManager.instance.AddCoins();
             other.gameObject.SetActive(false);
         }
@@ -44,6 +51,7 @@ public class PLayerController : MonoBehaviour
             // Enemy killed
             if (transform.position.y > other.gameObject.transform.position.y)
             {
+                source.PlayOneShot(killSound, AudioListener.volume);
                 GameManager.instance.AddEnemies();
                 Debug.Log("Killed an enemy");
                 Vector3 velocity = rigidBody.velocity;
@@ -84,24 +92,22 @@ public class PLayerController : MonoBehaviour
         }
         else if (other.CompareTag("Finish"))
         {
-            GameManager.instance.FinishGame();
+            if (GameManager.instance.keysCompleted) GameManager.instance.LevelCompleted();
         }
     }
 
     void LoseLife()
     {
-        GameManager.instance.LoseLives();
-        lives--;
-        if (lives > 0)
+        if (GameManager.instance.lives > 1)
         {
-            // Debug.Log("You died! Now you have " + lives + " lives");
+            source.PlayOneShot(deathSound, AudioListener.volume);
             transform.position = startPosition;
         }
         else
         {
-            // Debug.Log("Game over! Score: " + score);
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            source.PlayOneShot(loseSound, AudioListener.volume);
         }
+        GameManager.instance.LoseLives();
     }
 
     void Flip()
@@ -142,6 +148,7 @@ public class PLayerController : MonoBehaviour
         startPosition = transform.position;
         rigidBody = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        source = GetComponent<AudioSource>();
     }
 
     // Start is called before the first frame update
@@ -177,7 +184,7 @@ public class PLayerController : MonoBehaviour
                 isWalking = false;
             }
 
-            if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.Space)) // || Input.GetMouseButtonDown(0))
             {
                 Jump();
             }

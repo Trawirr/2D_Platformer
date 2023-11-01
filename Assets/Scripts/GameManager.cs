@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 
-public enum GameState { GS_PAUSEMENU, GS_GAME, GS_GAME_OVER, GS_LEVELCOMPLETED };
+public enum GameState { GS_PAUSEMENU, GS_GAME, GS_GAME_OVER, GS_LEVELCOMPLETED, GS_OPTIONS };
 
 public class GameManager : MonoBehaviour
 {
@@ -17,10 +17,12 @@ public class GameManager : MonoBehaviour
 
     public Image[] keysTab;
     private int keys = 0;
+    public int maxKeysNumber = 3;
+    public bool keysCompleted = false;
 
     public Image[] livesTab;
     public int maxLives = 4;
-    private int lives = 3;
+    public int lives = 3;
 
     private float timer = 0.0f;
     public TMP_Text timerText;
@@ -29,18 +31,72 @@ public class GameManager : MonoBehaviour
     private int enemies = 0;
 
     public Canvas pauseMenuCanvas;
+    public Canvas levelCompletedCanvas;
+    public Canvas gameOverCanvas;
+    public TMP_Text finalScoreText;
+    public TMP_Text highScoreText;
 
     private float changeSceneTimer = 1.0f;
 
+    // dodaæ animowanie siê wyniku po LeveLCompleted
+    public int scoreAnimationSpeed = 2;
+    private bool animatingScore = false;
+    private int score = 0;
+    private int maxScore = 0;
+    private int maxSecsToHighscore = 180;
+
+    public Canvas optionsCanvas;
+
+    public Slider volumeSlider;
+
+    public void SetVolume()
+    {
+        Debug.Log("Volume set to " + volumeSlider.value);
+        AudioListener.volume = volumeSlider.value;
+    }
+
+    public void IncreaseQuality()
+    {
+        Debug.Log("Quality increased");
+        QualitySettings.IncreaseLevel();
+    }
+
+    public void DecreaseQuality()
+    {
+        Debug.Log("Quality decreased");
+        QualitySettings.DecreaseLevel();
+    }
+
+    public void OnOptionsButtonClicked()
+    {
+        SetGameState(GameState.GS_OPTIONS);
+    }
+
+    void AnimateScore()
+    {
+        score += scoreAnimationSpeed;
+        if (score > maxScore)
+        {
+            score = maxScore;
+            animatingScore = false;
+        }
+        finalScoreText.text = "Score: " + score.ToString();
+    }
+
+    public void OnNextLevelButtonClicked()
+    {
+        SceneManager.LoadScene("Level2");
+    }
+
     public void FinishGame()
     {
-        if (keys == 3)
+        if (keys == maxKeysNumber)
         {
             Debug.Log("You won!");
         }
         else
         {
-            Debug.Log("You have found " + keys + "/3 keys");
+            Debug.Log("You have found " + keys + "/" + maxKeysNumber + " keys");
         }
     }
 
@@ -81,6 +137,7 @@ public class GameManager : MonoBehaviour
     {
         lives--;
         UpdateLives();
+        if (lives == 0) GameOver();
     }
 
     public void UpdateLives()
@@ -96,6 +153,7 @@ public class GameManager : MonoBehaviour
     {
         keysTab[keys].color = Color.yellow;
         keys++;
+        if (keys == maxKeysNumber) keysCompleted = true;
     }
 
     public void AddCoins()
@@ -112,6 +170,7 @@ public class GameManager : MonoBehaviour
         currentGameState = newGameState;
         if (newGameState == GameState.GS_GAME)
         {
+            Time.timeScale = 1.0f;
             inGameCanvas.enabled = true;
         }
         else
@@ -121,11 +180,48 @@ public class GameManager : MonoBehaviour
 
         if (newGameState == GameState.GS_PAUSEMENU)
         {
+            //Time.timeScale = 0.0f;
             pauseMenuCanvas.enabled = true;
         }
         else
         {
             pauseMenuCanvas.enabled = false;
+        }
+
+        if (newGameState == GameState.GS_LEVELCOMPLETED)
+        {
+            levelCompletedCanvas.enabled = true;
+            float secondsBelowMax = Mathf.Max(0, maxSecsToHighscore - timer);
+            maxScore = Mathf.FloorToInt(secondsBelowMax) + 50 * enemies + 25 * lives + 10 * coins;
+            animatingScore = true;
+
+            string highScoreKey = "HighScore" + SceneManager.GetActiveScene().name;
+
+            if (maxScore > PlayerPrefs.GetInt(highScoreKey))
+            {
+                PlayerPrefs.SetInt(highScoreKey, maxScore);
+            }
+
+            highScoreText.text = "Highscore: " + PlayerPrefs.GetInt(highScoreKey).ToString();
+        }
+
+        if (newGameState == GameState.GS_GAME_OVER)
+        {
+            gameOverCanvas.enabled = true;
+        }
+        else
+        {
+            gameOverCanvas.enabled = false;
+        }
+
+        if (newGameState == GameState.GS_OPTIONS)
+        {
+            //Time.timeScale = 0.0f;
+            optionsCanvas.enabled = true;
+        }
+        else
+        {
+            optionsCanvas.enabled = false;
         }
     }
 
@@ -134,7 +230,7 @@ public class GameManager : MonoBehaviour
         SetGameState(GameState.GS_GAME);
     }
 
-    void GameOver()
+    public void GameOver()
     {
         SetGameState(GameState.GS_GAME_OVER);
     }
@@ -144,7 +240,7 @@ public class GameManager : MonoBehaviour
         SetGameState(GameState.GS_PAUSEMENU);
     }
 
-    void LevelCompleted()
+    public void LevelCompleted()
     {
         SetGameState(GameState.GS_LEVELCOMPLETED);
     }
@@ -157,6 +253,11 @@ public class GameManager : MonoBehaviour
             k.color = Color.grey;
         }
         UpdateLives();
+
+        if (!PlayerPrefs.HasKey("HighScoreLevel1"))
+        {
+            PlayerPrefs.SetInt("HighScoreLevel1", 0);
+        }
     }
 
     // Start is called before the first frame update
@@ -179,6 +280,11 @@ public class GameManager : MonoBehaviour
         {
             timer += Time.deltaTime;
             UpdateTimer();
+        }
+
+        if (animatingScore)
+        {
+            AnimateScore();
         }
     }
 }

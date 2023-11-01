@@ -66,28 +66,31 @@ public class EagleController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (isMovingRight)
+        if (GameManager.instance.currentGameState == GameState.GS_GAME)
         {
-            if (this.transform.position.x - startPositionX < moveRange)
+            if (isMovingRight)
             {
-                moveRight();
+                if (this.transform.position.x - startPositionX < moveRange)
+                {
+                    moveRight();
+                }
+                else
+                {
+                    Flip();
+                    moveLeft();
+                }
             }
             else
             {
-                Flip();
-                moveLeft();
-            }
-        }
-        else
-        {
-            if (this.transform.position.x - startPositionX > -moveRange)
-            {
-                moveLeft();
-            }
-            else
-            {
-                Flip();
-                moveRight();
+                if (this.transform.position.x - startPositionX > -moveRange)
+                {
+                    moveLeft();
+                }
+                else
+                {
+                    Flip();
+                    moveRight();
+                }
             }
         }
     }

@@ -33,28 +33,31 @@ public class MovingPlatformController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (isMovingRight)
+        if (GameManager.instance.currentGameState == GameState.GS_GAME)
         {
-            if (this.transform.position.x - startPositionX < moveRange)
+            if (isMovingRight)
             {
-                moveRight();
+                if (this.transform.position.x - startPositionX < moveRange)
+                {
+                    moveRight();
+                }
+                else
+                {
+                    isMovingRight = !isMovingRight;
+                    moveLeft();
+                }
             }
             else
             {
-                isMovingRight = !isMovingRight;
-                moveLeft();
-            }
-        }
-        else
-        {
-            if (this.transform.position.x - startPositionX > -moveRange)
-            {
-                moveLeft();
-            }
-            else
-            {
-                isMovingRight = !isMovingRight;
-                moveRight();
+                if (this.transform.position.x - startPositionX > -moveRange)
+                {
+                    moveLeft();
+                }
+                else
+                {
+                    isMovingRight = !isMovingRight;
+                    moveRight();
+                }
             }
         }
     }
